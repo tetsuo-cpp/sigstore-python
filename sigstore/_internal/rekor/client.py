@@ -28,6 +28,7 @@ import requests
 from cryptography.x509 import Certificate
 from pydantic import BaseModel, Field, StrictInt, StrictStr
 
+from sigstore._internal.ctfe import CTKeyring
 from sigstore._internal.keyring import Keyring
 from sigstore._internal.tuf import TrustUpdater
 from sigstore._utils import base64_encode_pem_cert
@@ -37,6 +38,10 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_REKOR_URL = "https://rekor.sigstore.dev"
 STAGING_REKOR_URL = "https://rekor.sigstage.dev"
+
+
+class RekorKeyring(Keyring):
+    pass
 
 
 class RekorBundle(BaseModel):
@@ -302,7 +307,9 @@ class RekorEntriesRetrieve(_Endpoint):
 class RekorClient:
     """The internal Rekor client"""
 
-    def __init__(self, url: str, rekor_keyring: Keyring, ct_keyring: Keyring) -> None:
+    def __init__(
+        self, url: str, rekor_keyring: RekorKeyring, ct_keyring: CTKeyring
+    ) -> None:
         """
         Create a new `RekorClient` from the given URL.
         """
@@ -331,7 +338,11 @@ class RekorClient:
         rekor_keys = updater.get_rekor_keys()
         ctfe_keys = updater.get_ctfe_keys()
 
-        return cls(DEFAULT_REKOR_URL, Keyring(rekor_keys), Keyring(ctfe_keys))
+        return cls(
+            DEFAULT_REKOR_URL,
+            RekorKeyring(rekor_keys),
+            CTKeyring(ctfe_keys),
+        )
 
     @classmethod
     def staging(cls, updater: TrustUpdater) -> RekorClient:
@@ -343,7 +354,11 @@ class RekorClient:
         rekor_keys = updater.get_rekor_keys()
         ctfe_keys = updater.get_ctfe_keys()
 
-        return cls(STAGING_REKOR_URL, Keyring(rekor_keys), Keyring(ctfe_keys))
+        return cls(
+            STAGING_REKOR_URL,
+            RekorKeyring(rekor_keys),
+            CTKeyring(ctfe_keys),
+        )
 
     @property
     def log(self) -> RekorLog:

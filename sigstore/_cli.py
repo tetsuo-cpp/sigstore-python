@@ -26,12 +26,13 @@ from typing import Optional, TextIO, Union, cast
 from cryptography.x509 import load_pem_x509_certificates
 
 from sigstore import __version__
+from sigstore._internal.ctfe import CTKeyring
 from sigstore._internal.fulcio.client import DEFAULT_FULCIO_URL, FulcioClient
-from sigstore._internal.keyring import Keyring
 from sigstore._internal.rekor.client import (
     DEFAULT_REKOR_URL,
     RekorBundle,
     RekorClient,
+    RekorKeyring,
 )
 from sigstore._internal.tuf import TrustUpdater
 from sigstore.oidc import (
@@ -627,8 +628,8 @@ def _sign(args: argparse.Namespace) -> None:
         else:
             rekor_key = updater.get_rekor_keys()
 
-        ct_keyring = Keyring(ctfe_keys)
-        rekor_keyring = Keyring(rekor_key)
+        ct_keyring = CTKeyring(ctfe_keys)
+        rekor_keyring = RekorKeyring(rekor_key)
         signer = Signer(
             fulcio=FulcioClient(args.fulcio_url),
             rekor=RekorClient(args.rekor_url, rekor_keyring, ct_keyring),
@@ -771,9 +772,9 @@ def _collect_verification_state(
         verifier = Verifier(
             rekor=RekorClient(
                 url=args.rekor_url,
-                rekor_keyring=Keyring(rekor_keys),
+                rekor_keyring=RekorKeyring(rekor_keys),
                 # We don't use the CT keyring in verification so we can supply an empty keyring
-                ct_keyring=Keyring(),
+                ct_keyring=CTKeyring(),
             ),
             fulcio_certificate_chain=certificate_chain,
         )
