@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 Utilities for verifying signed certificate timestamps.
 """
@@ -31,10 +30,10 @@ from cryptography.x509.certificate_transparency import (
 )
 from cryptography.x509.oid import ExtendedKeyUsageOID
 
-from sigstore._internal.ctfe import (
-    CTKeyring,
-    CTKeyringError,
-    CTKeyringLookupError,
+from sigstore._internal.keyring import (
+    Keyring,
+    KeyringError,
+    KeyringLookupError,
 )
 from sigstore._utils import key_id
 
@@ -112,12 +111,13 @@ def _pack_digitally_signed(
     timestamp = sct.timestamp.replace(tzinfo=timezone.utc)
     data = struct.pack(
         pattern,
-        sct.version.value,                  # sct_version
-        0,                                  # signature_type (certificate_timestamp(0))
+        sct.version.value,  # sct_version
+        0,  # signature_type (certificate_timestamp(0))
         int(timestamp.timestamp() * 1000),  # timestamp (milliseconds)
-        sct.entry_type.value,               # entry_type (x509_entry(0) | precert_entry(1))
-        signed_entry,                       # select(entry_type) -> signed_entry (see above)
-        len(sct.extension_bytes),           # extensions (opaque CtExtensions<0..2^16-1>)
+        sct.entry_type.value,  # entry_type (x509_entry(0) | precert_entry(1))
+        signed_entry,  # select(entry_type) -> signed_entry (see above)
+        len(sct.extension_bytes
+            ),  # extensions (opaque CtExtensions<0..2^16-1>)
     )
     # fmt: on
 
@@ -149,7 +149,7 @@ def verify_sct(
     sct: SignedCertificateTimestamp,
     cert: Certificate,
     chain: List[Certificate],
-    ct_keyring: CTKeyring,
+    ct_keyring: Keyring,
 ) -> None:
     """
     Verify a signed certificate timestamp.
@@ -192,7 +192,7 @@ def verify_sct(
         ct_keyring.verify(
             key_id=sct.log_id, signature=sct.signature, data=digitally_signed
         )
-    except CTKeyringLookupError as exc:
+    except KeyringLookupError as exc:
         # We specialize this error case, since it usually indicates one of
         # two conditions: either the current sigstore client is out-of-date,
         # or that the SCT is well-formed but invalid for the current configuration
@@ -216,5 +216,5 @@ def verify_sct(
                 """
             ),
         )
-    except CTKeyringError as exc:
+    except KeyringError as exc:
         raise InvalidSctError from exc

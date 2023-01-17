@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 TUF functionality for `sigstore-python`.
 """
@@ -168,15 +167,15 @@ class TrustUpdater:
             raise Exception("CTFE keys not found in TUF metadata")
         return ctfes
 
-    def get_rekor_key(self) -> bytes:
+    def get_rekor_keys(self) -> list[bytes]:
         """Return the rekor public key content.
 
         May download files from the remote repository.
         """
-        keys = self._get("Rekor", ["Active"])
-        if len(keys) != 1:
-            raise Exception("Did not find one active Rekor key in TUF metadata")
-        return keys[0]
+        rekors = self._get("Rekor", ["Active"])
+        if not rekors:
+            raise Exception("Rekor keys not found in TUF metadata")
+        return rekors
 
     def get_fulcio_certs(self) -> list[Certificate]:
         """Return the Fulcio certificates.
