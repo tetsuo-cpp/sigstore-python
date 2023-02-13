@@ -221,4 +221,4 @@ def detect_buildkite() -> Optional[str]:
         )
 
     print(process.stdout)
-    return process.stdout
+    return process.stdout.strip()
